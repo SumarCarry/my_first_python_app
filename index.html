@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5ef">
+  <title>Daymark | Daily practice</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f3f5ef;
+      --surface: #ffffff;
+      --ink: #202923;
+      --muted: #707a72;
+      --line: #e4e9e1;
+      --green: #326b4d;
+      --green-dark: #244d37;
+      --green-soft: #e8f1e9;
+      --coral: #d9785e;
+      --gold: #d8a649;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#dfe7dc 0.7px, transparent 0.7px);
+      background-size: 18px 18px;
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(100% - 40px, 1080px); margin: 0 auto; padding: 30px 0 72px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 42px; }
+    .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; }
+    .brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: white; background: var(--green); font-family: var(--serif); font-size: 21px; }
+    .brand-name { font-size: 14px; font-weight: 700; letter-spacing: .02em; }
+    .brand-note { margin-left: 2px; color: var(--muted); font-size: 13px; }
+    .date-nav { display: flex; align-items: center; gap: 8px; }
+    .date-label { min-width: 132px; text-align: center; font-size: 13px; font-weight: 650; }
+    .button-quiet, .date-arrow { min-height: 36px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); }
+    .button-quiet { padding: 0 12px; color: var(--green-dark); font-size: 12px; font-weight: 650; }
+    .date-arrow { width: 34px; font-size: 18px; }
+    .button-quiet:hover, .date-arrow:hover { border-color: #b6c9b8; background: #fafffa; }
+
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; animation: arrive .45s ease-out both; }
+    .eyebrow { margin: 0 0 9px; color: var(--green); font-size: 11px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: var(--serif); font-size: clamp(34px, 5vw, 48px); font-weight: 400; line-height: 1.08; }
+    .intro-copy { margin: 11px 0 0; color: var(--muted); font-size: 14px; }
+    .progress-summary { display: flex; align-items: center; gap: 13px; padding: 11px 15px 11px 11px; border: 1px solid #dce5db; border-radius: 9px; background: rgba(255,255,255,.72); }
+    .progress-ring { display: grid; width: 42px; aspect-ratio: 1; place-items: center; border-radius: 50%; background: conic-gradient(var(--green) var(--progress, 0%), #e5ebe4 0); }
+    .progress-ring::before { content: ""; grid-area: 1 / 1; width: 31px; aspect-ratio: 1; border-radius: 50%; background: white; }
+    .progress-ring span { z-index: 1; grid-area: 1 / 1; font-size: 10px; font-weight: 750; }
+    .progress-copy strong { display: block; font-size: 13px; }
+    .progress-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+
+    .tabs { display: flex; gap: 6px; width: fit-content; margin-bottom: 17px; padding: 4px; border: 1px solid #e0e6de; border-radius: 8px; background: rgba(255,255,255,.64); }
+    .tab { min-height: 35px; padding: 0 14px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 12px; font-weight: 650; }
+    .tab[aria-selected="true"] { color: white; background: var(--green); box-shadow: 0 2px 4px #244d3720; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 276px; align-items: start; gap: 16px; }
+    .workspace[hidden] { display: none; }
+    .panel { border: 1px solid var(--line); border-radius: 9px; background: var(--surface); box-shadow: 0 8px 24px #25382908; }
+    .main-panel { min-height: 330px; padding: 22px 24px 18px; animation: arrive .45s .05s ease-out both; }
+    .side-panel { overflow: hidden; animation: arrive .45s .12s ease-out both; }
+    .panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .section-note { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .count { padding: 5px 8px; border-radius: 5px; color: var(--green-dark); background: var(--green-soft); font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .entry-list { padding: 0; margin: 0; list-style: none; }
+    .entry { display: flex; align-items: center; gap: 12px; min-height: 61px; border-bottom: 1px solid var(--line); animation: arrive .24s ease-out both; }
+    .entry:last-child { border-bottom: 0; }
+    .check { display: grid; flex: 0 0 21px; width: 21px; height: 21px; place-items: center; padding: 0; border: 1.5px solid #bdc9bd; border-radius: 6px; color: white; background: white; }
+    .check[aria-pressed="true"] { border-color: var(--green); background: var(--green); }
+    .check[aria-pressed="true"]::after { content: "✓"; font-size: 13px; line-height: 1; }
+    .entry-text { min-width: 0; flex: 1; }
+    .entry-title { overflow-wrap: anywhere; font-size: 13px; font-weight: 600; }
+    .entry-meta { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .is-done .entry-title { color: #929b93; text-decoration: line-through; }
+    .delete { flex: 0 0 auto; padding: 7px; border: 0; color: #8a948c; background: transparent; font-size: 11px; }
+    .delete:hover { color: #ad4c39; }
+    .empty { padding: 38px 12px; color: var(--muted); text-align: center; font-size: 13px; }
+    .empty strong { display: block; margin-bottom: 5px; color: var(--ink); font-family: var(--serif); font-size: 20px; font-weight: 400; }
+    .add-form { display: flex; gap: 8px; margin-top: 17px; }
+    .text-input, .date-input { min-width: 0; height: 40px; border: 1px solid #dce3db; border-radius: 6px; outline: none; color: var(--ink); background: white; font-size: 12px; }
+    .text-input { flex: 1; padding: 0 12px; }
+    .date-input { width: 142px; padding: 0 8px; color: var(--muted); }
+    .text-input:focus, .date-input:focus { border-color: #7da487; box-shadow: 0 0 0 3px #326b4d18; }
+    .add-button { min-width: 74px; height: 40px; padding: 0 13px; border: 0; border-radius: 6px; color: white; background: var(--green); font-size: 12px; font-weight: 700; }
+    .add-button:hover { background: var(--green-dark); }
+    .side-block { padding: 18px; }
+    .side-block + .side-block { border-top: 1px solid var(--line); background: #fbfcfa; }
+    .side-title { margin: 0 0 12px; font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .mini-stat { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .mini-stat:last-child { padding-bottom: 0; border: 0; }
+    .mini-stat strong { color: var(--ink); font-weight: 650; }
+    .callout { color: var(--muted); font-family: var(--serif); font-size: 17px; line-height: 1.35; }
+    .callout span { display: block; margin-top: 8px; color: var(--green); font-family: var(--sans); font-size: 11px; font-weight: 650; }
+    .toast { position: fixed; right: 22px; bottom: 22px; z-index: 3; padding: 11px 15px; border-radius: 7px; color: white; background: #26392d; box-shadow: 0 8px 24px #17281c30; font-size: 12px; animation: arrive .2s ease-out both; }
+    .toast[hidden] { display: none; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 700px) {
+      .shell { width: min(100% - 28px, 540px); padding-top: 20px; }
+      .topbar { align-items: start; margin-bottom: 34px; }
+      .brand-note { display: none; }
+      .date-nav { gap: 5px; }
+      .date-label { min-width: 108px; font-size: 11px; }
+      .button-quiet { padding: 0 8px; }
+      .intro { align-items: start; flex-direction: column; gap: 17px; margin-bottom: 20px; }
+      h1 { font-size: 38px; }
+      .workspace { grid-template-columns: 1fr; }
+      .side-panel { display: grid; grid-template-columns: 1fr 1fr; }
+      .side-block + .side-block { border-top: 0; border-left: 1px solid var(--line); }
+      .main-panel { padding: 19px 17px 16px; }
+      .add-form { flex-wrap: wrap; }
+      .date-input { flex: 1; }
+    }
+    @media (max-width: 430px) {
+      .topbar { flex-direction: column; gap: 14px; }
+      .date-nav { align-self: stretch; justify-content: space-between; }
+      .date-label { flex: 1; }
+      .side-panel { grid-template-columns: 1fr; }
+      .side-block + .side-block { border-top: 1px solid var(--line); border-left: 0; }
+      .date-input { width: 100%; flex-basis: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Daymark home">
+        <span class="brand-mark" aria-hidden="true">d.</span>
+        <span class="brand-name">DAYMARK</span>
+        <span class="brand-note">small steps, kept</span>
+      </a>
+      <div class="date-nav" aria-label="Choose a day">
+        <button class="date-arrow" id="previous-day" aria-label="Previous day">‹</button>
+        <span class="date-label" id="date-label"></span>
+        <button class="date-arrow" id="next-day" aria-label="Next day">›</button>
+        <button class="button-quiet" id="today-button">Today</button>
+      </div>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="eyebrow" id="weekday-label">YOUR DAILY PRACTICE</p>
+        <h1>Make room for<br>what matters.</h1>
+        <p class="intro-copy">A little progress, one day at a time.</p>
+      </div>
+      <div class="progress-summary" aria-live="polite">
+        <div class="progress-ring" id="progress-ring"><span id="progress-percent">0%</span></div>
+        <div class="progress-copy"><strong id="progress-count">0 of 0 habits</strong><span>daily practice</span></div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Tracker sections">
+      <button class="tab" id="habits-tab" role="tab" aria-selected="true" aria-controls="habits-view">Habits</button>
+      <button class="tab" id="tasks-tab" role="tab" aria-selected="false" aria-controls="tasks-view">To-do list</button>
+    </nav>
+
+    <section class="workspace" id="habits-view" role="tabpanel" aria-labelledby="habits-tab">
+      <div class="panel main-panel">
+        <div class="panel-heading">
+          <div><h2>Daily habits</h2><p class="section-note">Show up for the things you want to keep.</p></div>
+          <span class="count" id="habit-count">0 habits</span>
+        </div>
+        <ul class="entry-list" id="habit-list"></ul>
+        <form class="add-form" id="habit-form">
+          <input class="text-input" id="habit-name" maxlength="80" placeholder="Add a habit, like morning stretch" aria-label="New habit name" required>
+          <button class="add-button" type="submit">Add habit</button>
+        </form>
+      </div>
+      <aside class="panel side-panel">
+        <div class="side-block">
+          <h2 class="side-title">Today at a glance</h2>
+          <div class="mini-stat"><span>Habits done</span><strong id="side-habits-done">0 / 0</strong></div>
+          <div class="mini-stat"><span>Tasks open</span><strong id="side-tasks-open">0</strong></div>
+        </div>
+        <div class="side-block">
+          <p class="callout">“Small disciplines repeated with consistency lead to great achievements.”<span>John C. Maxwell</span></p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="workspace" id="tasks-view" role="tabpanel" aria-labelledby="tasks-tab" hidden>
+      <div class="panel main-panel">
+        <div class="panel-heading">
+          <div><h2>To-do list</h2><p class="section-note">Get it out of your head and into the day.</p></div>
+          <span class="count" id="task-count">0 open</span>
+        </div>
+        <ul class="entry-list" id="task-list"></ul>
+        <form class="add-form" id="task-form">
+          <input class="text-input" id="task-title" maxlength="160" placeholder="What needs doing?" aria-label="New task" required>
+          <input class="date-input" id="task-due" type="date" aria-label="Task due date">
+          <button class="add-button" type="submit">Add task</button>
+        </form>
+      </div>
+      <aside class="panel side-panel">
+        <div class="side-block">
+          <h2 class="side-title">Your list</h2>
+          <div class="mini-stat"><span>Still to do</span><strong id="task-open-summary">0</strong></div>
+          <div class="mini-stat"><span>Completed</span><strong id="task-done-summary">0</strong></div>
+        </div>
+        <div class="side-block">
+          <p class="callout">One thing at a time is still a way forward.<span>Make today count</span></p>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script>
+    const state = { selectedDate: new Date(), habits: [], tasks: [] };
+    const dateLabel = document.querySelector("#date-label");
+    const toast = document.querySelector("#toast");
+    let toastTimer;
+
+    function localDateString(value) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 2400);
+    }
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...options.headers },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Something went wrong");
+      return result;
+    }
+
+    async function loadState() {
+      const day = localDateString(state.selectedDate);
+      const result = await request(`/api/state?date=${day}`);
+      state.habits = result.habits;
+      state.tasks = result.tasks;
+      dateLabel.textContent = state.selectedDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      document.querySelector("#weekday-label").textContent = state.selectedDate.toLocaleDateString(undefined, { weekday: "long" }).toUpperCase() + "'S PRACTICE";
+      renderHabits();
+      renderTasks();
+      updateSummary();
+    }
+
+    function emptyState(title, note) {
+      const item = document.createElement("li");
+      item.className = "empty";
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      const text = document.createElement("span");
+      text.textContent = note;
+      item.append(strong, text);
+      return item;
+    }
+
+    function addEntry(list, item, kind) {
+      const completed = Boolean(item.completed);
+      const row = document.createElement("li");
+      row.className = `entry${completed ? " is-done" : ""}`;
+      const check = document.createElement("button");
+      check.type = "button";
+      check.className = "check";
+      check.setAttribute("aria-label", `${completed ? "Mark incomplete" : "Mark complete"}: ${kind === "habit" ? item.name : item.title}`);
+      check.setAttribute("aria-pressed", String(completed));
+      check.addEventListener("click", () => toggleEntry(kind, item, !completed));
+
+      const copy = document.createElement("div");
+      copy.className = "entry-text";
+      const title = document.createElement("div");
+      title.className = "entry-title";
+      title.textContent = kind === "habit" ? item.name : item.title;
+      copy.append(title);
+      if (kind === "task" && item.due_date) {
+        const due = document.createElement("div");
+        due.className = "entry-meta";
+        due.textContent = `Due ${new Date(`${item.due_date}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+        copy.append(due);
+      }
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "delete";
+      remove.textContent = "Remove";
+      remove.setAttribute("aria-label", `Remove ${kind === "habit" ? "habit" : "task"}: ${kind === "habit" ? item.name : item.title}`);
+      remove.addEventListener("click", () => deleteEntry(kind, item.id));
+      row.append(check, copy, remove);
+      list.append(row);
+    }
+
+    function renderHabits() {
+      const list = document.querySelector("#habit-list");
+      list.replaceChildren();
+      if (state.habits.length === 0) {
+        list.append(emptyState("Start with one small thing.", "Add a habit below to begin your daily practice."));
+      } else {
+        state.habits.forEach((habit) => addEntry(list, habit, "habit"));
+      }
+      const total = state.habits.length;
+      const done = state.habits.filter((habit) => habit.completed).length;
+      const percent = total ? Math.round(done / total * 100) : 0;
+      document.querySelector("#habit-count").textContent = `${total} ${total === 1 ? "habit" : "habits"}`;
+      document.querySelector("#progress-count").textContent = `${done} of ${total} ${total === 1 ? "habit" : "habits"}`;
+      document.querySelector("#progress-percent").textContent = `${percent}%`;
+      document.querySelector("#progress-ring").style.setProperty("--progress", `${percent}%`);
+      document.querySelector("#side-habits-done").textContent = `${done} / ${total}`;
+    }
+
+    function renderTasks() {
+      const list = document.querySelector("#task-list");
+      list.replaceChildren();
+      if (state.tasks.length === 0) {
+        list.append(emptyState("A clear list is a good start.", "Add a task below whenever something comes to mind."));
+      } else {
+        state.tasks.forEach((task) => addEntry(list, task, "task"));
+      }
+      const open = state.tasks.filter((task) => !task.completed).length;
+      const done = state.tasks.length - open;
+      document.querySelector("#task-count").textContent = `${open} open`;
+      document.querySelector("#task-open-summary").textContent = open;
+      document.querySelector("#task-done-summary").textContent = done;
+      document.querySelector("#side-tasks-open").textContent = open;
+    }
+
+    function updateSummary() {
+      document.querySelector("#side-tasks-open").textContent = state.tasks.filter((task) => !task.completed).length;
+    }
+
+    async function toggleEntry(kind, item, completed) {
+      const body = { completed };
+      if (kind === "habit") body.date = localDateString(state.selectedDate);
+      const path = kind === "habit" ? `/api/habits/${item.id}/toggle` : `/api/tasks/${item.id}/toggle`;
+      try {
+        await request(path, { method: "POST", body: JSON.stringify(body) });
+        await loadState();
+      } catch (error) { showToast(error.message); }
+    }
+
+    async function deleteEntry(kind, id) {
+      try {
+        await request(`/api/${kind === "habit" ? "habits" : "tasks"}/${id}`, { method: "DELETE" });
+        await loadState();
+        showToast(kind === "habit" ? "Habit removed" : "Task removed");
+      } catch (error) { showToast(error.message); }
+    }
+
+    document.querySelector("#habit-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = document.querySelector("#habit-name");
+      try {
+        await request("/api/habits", { method: "POST", body: JSON.stringify({ name: input.value }) });
+        input.value = "";
+        await loadState();
+        showToast("Habit added");
+      } catch (error) { showToast(error.message); }
+    });
+
+    document.querySelector("#task-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = document.querySelector("#task-title");
+      const dueDate = document.querySelector("#task-due");
+      try {
+        await request("/api/tasks", { method: "POST", body: JSON.stringify({ title: title.value, due_date: dueDate.value }) });
+        title.value = "";
+        dueDate.value = "";
+        await loadState();
+        showToast("Task added");
+      } catch (error) { showToast(error.message); }
+    });
+
+    document.querySelector("#previous-day").addEventListener("click", () => {
+      state.selectedDate.setDate(state.selectedDate.getDate() - 1);
+      loadState().catch((error) => showToast(error.message));
+    });
+    document.querySelector("#next-day").addEventListener("click", () => {
+      state.selectedDate.setDate(state.selectedDate.getDate() + 1);
+      loadState().catch((error) => showToast(error.message));
+    });
+    document.querySelector("#today-button").addEventListener("click", () => {
+      state.selectedDate = new Date();
+      loadState().catch((error) => showToast(error.message));
+    });
+
+    for (const [tabId, viewId] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"]]) {
+      document.querySelector(`#${tabId}`).addEventListener("click", () => {
+        for (const [otherTab, otherView] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"]]) {
+          const selected = otherTab === tabId;
+          document.querySelector(`#${otherTab}`).setAttribute("aria-selected", String(selected));
+          document.querySelector(`#${otherView}`).hidden = !selected;
+        }
+      });
+    }
+
+    loadState().catch((error) => showToast(error.message));
+  </script>
+</body>
+</html>
