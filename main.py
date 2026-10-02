@@ -19,7 +19,6 @@ def connect_db():
 	connection.execute("PRAGMA foreign_keys = ON")
 	return connection
 
-
 def initialize_db():
 	with connect_db() as connection:
 		connection.executescript(
