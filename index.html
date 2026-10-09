@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f3f5ef">
-  <title>Daymark | Daily practice</title>
+  <title>TRACKOID | Daily habit tracker</title>
   <style>
     :root {
       color-scheme: light;
@@ -64,6 +64,33 @@
     .tabs { display: flex; gap: 6px; width: fit-content; margin-bottom: 17px; padding: 4px; border: 1px solid #e0e6de; border-radius: 8px; background: rgba(255,255,255,.64); }
     .tab { min-height: 35px; padding: 0 14px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 12px; font-weight: 650; }
     .tab[aria-selected="true"] { color: white; background: var(--green); box-shadow: 0 2px 4px #244d3720; }
+    .period-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 18px 0 20px; }
+    .segmented-control { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f6f8f5; }
+    .segment { min-height: 31px; padding: 0 12px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 700; }
+    .segment[aria-pressed="true"] { color: white; background: var(--green); }
+    .period-navigation { display: flex; align-items: center; gap: 9px; }
+    .period-navigation strong { min-width: 160px; text-align: center; font-size: 12px; }
+    .period-arrow { width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: white; font-size: 17px; }
+    .period-arrow:hover { border-color: #b6c9b8; }
+    .period-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .period-stat { padding: 13px 12px 13px 0; }
+    .period-stat + .period-stat { padding-left: 14px; border-left: 1px solid var(--line); }
+    .period-stat span { display: block; color: var(--muted); font-size: 10px; }
+    .period-stat strong { display: block; margin-top: 5px; font-size: 18px; font-weight: 700; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; }
+    .calendar-weekday { padding: 1px 0 3px; color: var(--muted); text-align: center; font-size: 10px; font-weight: 650; }
+    .progress-day { display: flex; min-height: 88px; flex-direction: column; justify-content: space-between; gap: 8px; padding: 9px 8px; border: 1px solid #e7ebe5; border-radius: 6px; background: #fafbf9; }
+    .progress-day.complete { border-color: #c9dfcd; background: #edf5ed; }
+    .progress-day.partial { border-color: #d6e5d7; background: #f1f7f1; }
+    .progress-day.current { box-shadow: inset 0 0 0 1px var(--green); }
+    .progress-day.future { background: #fbfbfa; }
+    .day-top { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+    .day-top span { color: var(--muted); font-size: 10px; }
+    .day-top strong { color: var(--green-dark); font-size: 10px; }
+    .day-track { height: 4px; overflow: hidden; border-radius: 4px; background: #e5eae3; }
+    .day-track span { display: block; height: 100%; border-radius: inherit; background: var(--green); }
+    .progress-day small { color: var(--muted); font-size: 9px; line-height: 1.2; }
+    .calendar-spacer { min-height: 1px; }
     .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 276px; align-items: start; gap: 16px; }
     .workspace[hidden] { display: none; }
     .panel { border: 1px solid var(--line); border-radius: 9px; background: var(--surface); box-shadow: 0 8px 24px #25382908; }
@@ -121,6 +148,10 @@
       .main-panel { padding: 19px 17px 16px; }
       .add-form { flex-wrap: wrap; }
       .date-input { flex: 1; }
+      .period-toolbar { align-items: start; flex-direction: column; }
+      .period-navigation { align-self: stretch; justify-content: space-between; }
+      .progress-day { min-height: 77px; padding: 7px 5px; }
+      .calendar-grid { gap: 5px; }
     }
     @media (max-width: 430px) {
       .topbar { flex-direction: column; gap: 14px; }
@@ -136,9 +167,9 @@
 <body>
   <main class="shell">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="Daymark home">
-        <span class="brand-mark" aria-hidden="true">d.</span>
-        <span class="brand-name">DAYMARK</span>
+      <a class="brand" href="#" aria-label="TRACKOID home">
+        <span class="brand-mark" aria-hidden="true">t.</span>
+        <span class="brand-name">TRACKOID</span>
         <span class="brand-note">small steps, kept</span>
       </a>
       <div class="date-nav" aria-label="Choose a day">
@@ -164,6 +195,7 @@
     <nav class="tabs" aria-label="Tracker sections">
       <button class="tab" id="habits-tab" role="tab" aria-selected="true" aria-controls="habits-view">Habits</button>
       <button class="tab" id="tasks-tab" role="tab" aria-selected="false" aria-controls="tasks-view">To-do list</button>
+      <button class="tab" id="progress-tab" role="tab" aria-selected="false" aria-controls="progress-view">Progress</button>
     </nav>
 
     <section class="workspace" id="habits-view" role="tabpanel" aria-labelledby="habits-tab">
@@ -214,11 +246,47 @@
         </div>
       </aside>
     </section>
+
+    <section class="workspace" id="progress-view" role="tabpanel" aria-labelledby="progress-tab" hidden>
+      <div class="panel main-panel">
+        <div class="panel-heading">
+          <div><h2 id="period-heading">Weekly progress</h2><p class="section-note" id="period-description">Your habit check-ins, day by day.</p></div>
+          <span class="count" id="period-date-count">7 days</span>
+        </div>
+        <div class="period-toolbar">
+          <div class="segmented-control" role="group" aria-label="Progress period">
+            <button class="segment" data-period="week" aria-pressed="true">Week</button>
+            <button class="segment" data-period="month" aria-pressed="false">Month</button>
+          </div>
+          <div class="period-navigation">
+            <button class="period-arrow" id="previous-period" aria-label="Previous period">‹</button>
+            <strong id="period-range-label"></strong>
+            <button class="period-arrow" id="next-period" aria-label="Next period">›</button>
+          </div>
+        </div>
+        <div class="period-stats" aria-live="polite">
+          <div class="period-stat"><span>Completion rate</span><strong id="period-rate">0%</strong></div>
+          <div class="period-stat"><span>Habit check-ins</span><strong id="period-checkins">0 / 0</strong></div>
+          <div class="period-stat"><span>All habits done</span><strong id="period-perfect-days">0 days</strong></div>
+        </div>
+        <div class="calendar-grid" id="progress-calendar" aria-label="Habit completion calendar"></div>
+      </div>
+      <aside class="panel side-panel">
+        <div class="side-block">
+          <h2 class="side-title">Period highlights</h2>
+          <div class="mini-stat"><span>Days with progress</span><strong id="period-active-days">0</strong></div>
+          <div class="mini-stat"><span>Perfect days</span><strong id="period-perfect-summary">0</strong></div>
+        </div>
+        <div class="side-block">
+          <p class="callout">Consistency is built one check-in at a time.<span>Keep your rhythm</span></p>
+        </div>
+      </aside>
+    </section>
   </main>
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script>
-    const state = { selectedDate: new Date(), habits: [], tasks: [] };
+    const state = { selectedDate: new Date(), habits: [], tasks: [], progressPeriod: "week", progressAnchor: new Date() };
     const dateLabel = document.querySelector("#date-label");
     const toast = document.querySelector("#toast");
     let toastTimer;
@@ -338,6 +406,74 @@
       document.querySelector("#side-tasks-open").textContent = open;
     }
 
+    function renderProgress(data) {
+      const start = new Date(`${data.start}T12:00:00`);
+      const end = new Date(`${data.end}T12:00:00`);
+      const dateOptions = { month: "short", day: "numeric" };
+      document.querySelector("#period-heading").textContent = data.period === "week" ? "Weekly progress" : "Monthly progress";
+      document.querySelector("#period-description").textContent = data.period === "week" ? "Your habit check-ins, day by day." : "Your habit rhythm across the month.";
+      document.querySelector("#period-date-count").textContent = `${data.days.length} days`;
+      document.querySelector("#period-range-label").textContent = data.period === "week"
+        ? `${start.toLocaleDateString(undefined, dateOptions)} to ${end.toLocaleDateString(undefined, dateOptions)}`
+        : start.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      document.querySelectorAll(".segment").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.period === data.period));
+      });
+      document.querySelector("#period-rate").textContent = `${data.rate}%`;
+      document.querySelector("#period-checkins").textContent = `${data.completed} / ${data.possible}`;
+      document.querySelector("#period-perfect-days").textContent = `${data.perfect_days} ${data.perfect_days === 1 ? "day" : "days"}`;
+      document.querySelector("#period-active-days").textContent = data.active_days;
+      document.querySelector("#period-perfect-summary").textContent = data.perfect_days;
+
+      const calendar = document.querySelector("#progress-calendar");
+      calendar.replaceChildren();
+      for (const weekday of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]) {
+        const label = document.createElement("span");
+        label.className = "calendar-weekday";
+        label.textContent = weekday;
+        calendar.append(label);
+      }
+      if (data.period === "month") {
+        const leadingDays = (start.getDay() + 6) % 7;
+        for (let index = 0; index < leadingDays; index += 1) {
+          const spacer = document.createElement("span");
+          spacer.className = "calendar-spacer";
+          spacer.setAttribute("aria-hidden", "true");
+          calendar.append(spacer);
+        }
+      }
+      for (const day of data.days) {
+        const dayDate = new Date(`${day.date}T12:00:00`);
+        const rate = day.total ? Math.round(day.completed / day.total * 100) : 0;
+        const level = day.future || !day.total ? "empty" : rate === 100 ? "complete" : rate > 0 ? "partial" : "zero";
+        const cell = document.createElement("div");
+        cell.className = `progress-day ${level}${day.date === localDateString(new Date()) ? " current" : ""}${day.future ? " future" : ""}`;
+        cell.setAttribute("aria-label", `${dayDate.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}: ${day.future ? "upcoming" : `${day.completed} of ${day.total} habits complete`}`);
+        const top = document.createElement("div");
+        top.className = "day-top";
+        const number = document.createElement("span");
+        number.textContent = dayDate.getDate();
+        const percentage = document.createElement("strong");
+        percentage.textContent = day.future ? "-" : `${rate}%`;
+        top.append(number, percentage);
+        const track = document.createElement("div");
+        track.className = "day-track";
+        const fill = document.createElement("span");
+        fill.style.width = `${day.future ? 0 : rate}%`;
+        track.append(fill);
+        const detail = document.createElement("small");
+        detail.textContent = day.future ? "Upcoming" : day.total ? `${day.completed} of ${day.total} done` : "No habits";
+        cell.append(top, track, detail);
+        calendar.append(cell);
+      }
+    }
+
+    async function loadProgress() {
+      const anchor = localDateString(state.progressAnchor);
+      const data = await request(`/api/progress?period=${state.progressPeriod}&date=${anchor}`);
+      renderProgress(data);
+    }
+
     function updateSummary() {
       document.querySelector("#side-tasks-open").textContent = state.tasks.filter((task) => !task.completed).length;
     }
@@ -397,13 +533,32 @@
       loadState().catch((error) => showToast(error.message));
     });
 
-    for (const [tabId, viewId] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"]]) {
+    document.querySelectorAll(".segment").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.progressPeriod = button.dataset.period;
+        loadProgress().catch((error) => showToast(error.message));
+      });
+    });
+    for (const [buttonId, direction] of [["previous-period", -1], ["next-period", 1]]) {
+      document.querySelector(`#${buttonId}`).addEventListener("click", () => {
+        if (state.progressPeriod === "week") {
+          state.progressAnchor.setDate(state.progressAnchor.getDate() + direction * 7);
+        } else {
+          state.progressAnchor.setDate(1);
+          state.progressAnchor.setMonth(state.progressAnchor.getMonth() + direction);
+        }
+        loadProgress().catch((error) => showToast(error.message));
+      });
+    }
+
+    for (const [tabId, viewId] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"], ["progress-tab", "progress-view"]]) {
       document.querySelector(`#${tabId}`).addEventListener("click", () => {
-        for (const [otherTab, otherView] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"]]) {
+        for (const [otherTab, otherView] of [["habits-tab", "habits-view"], ["tasks-tab", "tasks-view"], ["progress-tab", "progress-view"]]) {
           const selected = otherTab === tabId;
           document.querySelector(`#${otherTab}`).setAttribute("aria-selected", String(selected));
           document.querySelector(`#${otherView}`).hidden = !selected;
         }
+        if (tabId === "progress-tab") loadProgress().catch((error) => showToast(error.message));
       });
     }
 

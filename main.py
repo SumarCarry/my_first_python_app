@@ -1,7 +1,8 @@
 import json
 import sqlite3
 import webbrowser
-from datetime import date
+from calendar import monthrange
+from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -50,6 +51,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
 		body = json.dumps(payload).encode("utf-8")
 		self.send_response(status)
 		self.send_header("Content-Type", "application/json; charset=utf-8")
+		self.send_header("Cache-Control", "no-store")
 		self.send_header("Content-Length", str(len(body)))
 		self.end_headers()
 		self.wfile.write(body)
@@ -90,10 +92,82 @@ class TrackerHandler(BaseHTTPRequestHandler):
 			)
 			return
 
+		if parsed.path == "/api/progress":
+			query = parse_qs(parsed.query)
+			period = query.get("period", ["week"])[0]
+			anchor_value = query.get("date", [date.today().isoformat()])[0]
+			if period not in ("week", "month"):
+				self.send_json({"error": "Period must be week or month"}, 400)
+				return
+			try:
+				anchor = date.fromisoformat(anchor_value)
+			except ValueError:
+				self.send_json({"error": "Invalid date"}, 400)
+				return
+
+			if period == "week":
+				start = anchor - timedelta(days=anchor.weekday())
+				end = start + timedelta(days=6)
+			else:
+				start = anchor.replace(day=1)
+				end = anchor.replace(day=monthrange(anchor.year, anchor.month)[1])
+			today = date.today()
+			with connect_db() as connection:
+				habit_dates = connection.execute("SELECT substr(created_at, 1, 10) AS created_day FROM habits").fetchall()
+				logs = connection.execute(
+					"SELECT habit_logs.day, COUNT(*) AS completed FROM habit_logs "
+					"JOIN habits ON habits.id = habit_logs.habit_id "
+					"AND substr(habits.created_at, 1, 10) <= habit_logs.day "
+					"WHERE habit_logs.completed = 1 AND habit_logs.day BETWEEN ? AND ? "
+					"GROUP BY habit_logs.day",
+					(start.isoformat(), end.isoformat()),
+				).fetchall()
+			created_days = [date.fromisoformat(row["created_day"]) for row in habit_dates]
+			completed_by_day = {row["day"]: row["completed"] for row in logs}
+			days = []
+			completed_total = 0
+			possible_total = 0
+			active_days = 0
+			perfect_days = 0
+			for offset in range((end - start).days + 1):
+				day = start + timedelta(days=offset)
+				is_future = day > today
+				total = sum(created_day <= day for created_day in created_days)
+				completed = completed_by_day.get(day.isoformat(), 0)
+				days.append(
+					{
+						"date": day.isoformat(),
+						"completed": completed,
+						"total": total,
+						"rate": round(completed / total * 100) if total else 0,
+						"future": is_future,
+					}
+				)
+				if not is_future:
+					completed_total += completed
+					possible_total += total
+					active_days += completed > 0
+					perfect_days += total > 0 and completed == total
+			self.send_json(
+				{
+					"period": period,
+					"start": start.isoformat(),
+					"end": end.isoformat(),
+					"days": days,
+					"completed": completed_total,
+					"possible": possible_total,
+					"rate": round(completed_total / possible_total * 100) if possible_total else 0,
+					"active_days": active_days,
+					"perfect_days": perfect_days,
+				}
+			)
+			return
+
 		if parsed.path == "/":
 			page = (APP_DIR / "index.html").read_bytes()
 			self.send_response(200)
 			self.send_header("Content-Type", "text/html; charset=utf-8")
+			self.send_header("Cache-Control", "no-store")
 			self.send_header("Content-Length", str(len(page)))
 			self.end_headers()
 			self.wfile.write(page)
@@ -195,7 +269,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
 	initialize_db()
 	address = f"http://{HOST}:{PORT}"
-	print(f"Daily Habit Tracker is running at {address}")
+	print(f"TRACKOID is running at {address}")
 	webbrowser.open(address)
 	try:
 		ThreadingHTTPServer((HOST, PORT), TrackerHandler).serve_forever()
